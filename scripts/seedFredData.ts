@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 import { PrismaClient, Prisma } from '@prisma/client';
 import { deflationaryMetrics, inflationaryMetrics } from '../app/data/metrics';
 import { fetchFredData, FRED_SERIES_INFO, FRED_SERIES_MAP } from '../app/services/fredApi';
@@ -145,4 +147,4 @@ if (require.main === module) {
     .finally(async () => {
       await prisma.$disconnect();
     });
-} 
+}

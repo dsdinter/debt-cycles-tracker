@@ -24,6 +24,23 @@ export const FRED_SERIES_MAP: Record<string, string> = {
   'stock-market': 'SP500', // S&P 500
   'inflation-def': 'CPIAUCSL', // Consumer Price Index for All Urban Consumers
   'gdp-growth-def': 'A191RL1Q225SBEA', // Real GDP Growth Rate
+  'real-estate': 'CSUSHPINSA', // S&P/Case-Shiller U.S. National Home Price Index
+  'credit-growth': 'TOTDTEUSQ163N', // Total Credit to Non-Financial Sector
+  'debt-service-def': 'TDSP', // Household Debt Service Payments
+  'inflation-inf': 'CPIAUCSL', // Same as inflation-def
+  'real-exchange': 'RBUSBIS', // Real Effective Exchange Rate
+  'nominal-exchange': 'NBUSBIS', // Nominal Effective Exchange Rate
+  'foreign-debt': 'FDHBFIN', // Federal Debt Held by Foreign and International Investors
+  'current-account': 'BOPBCA', // Balance on Current Account
+  'capital-inflows': 'NETFI', // Net Foreign Investment (Proxy)
+  'capital-outflows': 'NETFI', // Net Foreign Investment (Proxy)
+  'fx-reserves': 'TOTRESNS', // Total Reserves excluding Gold
+  'equity-local': 'SP500', // Same as stock-market
+  'equity-foreign': 'SP500', // Placeholder using SP500
+  'debt-service-inf': 'TDSP', // Same as debt-service-def
+  'gdp-growth-inf': 'A191RL1Q225SBEA', // Same as gdp-growth-def
+  'yield-curve': 'T10Y2Y', // Treasury Yield Curve
+  'consumer-sentiment': 'UMCSENT', // Consumer Sentiment
 };
 
 // Also map series IDs to friendly titles and frequencies
@@ -74,6 +91,72 @@ export const FRED_SERIES_INFO: Record<string, {
     description: 'Percent Change in Real Gross Domestic Product',
     unit: '%',
     frequency: 'Quarterly'
+  },
+  'CSUSHPINSA': {
+    name: 'Case-Shiller Home Price Index',
+    description: 'S&P/Case-Shiller U.S. National Home Price Index',
+    unit: 'Index',
+    frequency: 'Monthly'
+  },
+  'TOTDTEUSQ163N': {
+    name: 'Total Credit to Non-Financial Sector',
+    description: 'Total Credit to Non-Financial Sector, Adjusted for Breaks',
+    unit: '%',
+    frequency: 'Quarterly'
+  },
+  'TDSP': {
+    name: 'Debt Service Ratio',
+    description: 'Household Debt Service Payments as a Percent of Disposable Personal Income',
+    unit: '%',
+    frequency: 'Quarterly'
+  },
+  'RBUSBIS': {
+    name: 'Real Effective Exchange Rate',
+    description: 'Real Effective Exchange Rate for United States',
+    unit: 'Index',
+    frequency: 'Monthly'
+  },
+  'NBUSBIS': {
+    name: 'Nominal Effective Exchange Rate',
+    description: 'Nominal Effective Exchange Rate for United States',
+    unit: 'Index',
+    frequency: 'Monthly'
+  },
+  'FDHBFIN': {
+    name: 'Foreign Holdings of Federal Debt',
+    description: 'Federal Debt Held by Foreign and International Investors',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'BOPBCA': {
+    name: 'Current Account Balance',
+    description: 'Balance on Current Account',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'NETFI': {
+    name: 'Net Foreign Investment',
+    description: 'Net Foreign Investment',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'TOTRESNS': {
+    name: 'Total Reserves',
+    description: 'Total Reserves excluding Gold for United States',
+    unit: 'Millions of U.S. Dollars',
+    frequency: 'Monthly'
+  },
+  'T10Y2Y': {
+    name: 'Treasury Yield Curve',
+    description: '10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity',
+    unit: '%',
+    frequency: 'Daily'
+  },
+  'UMCSENT': {
+    name: 'Consumer Sentiment',
+    description: 'University of Michigan: Consumer Sentiment',
+    unit: 'Index',
+    frequency: 'Monthly'
   }
 };
 
@@ -321,4 +404,4 @@ export function processFredData(data: DataPoint[], metricId: string): DataPoint[
       // For most metrics, we can use the raw data
       return data;
   }
-} 
+}

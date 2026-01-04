@@ -1,6 +1,4 @@
 import { Metric, FredDataPoint } from '../types/metrics';
-import { fetchFredData, FRED_SERIES_MAP, FRED_SERIES_INFO } from './fredApi';
-import { getCachedFredData } from '../database/fredDataService';
 
 // Sample metrics definitions - we'll keep these for structure, but populate data dynamically
 const METRIC_DEFINITIONS: Metric[] = [
@@ -248,25 +246,20 @@ export async function fetchMetrics(): Promise<Metric[]> {
         }
         
         try {
-          // First check if we have data in the database
-          const cachedData = await getCachedFredData(seriesId);
+          // Call the internal API route instead of direct function calls
+          // This allows server-side execution where DB access is permitted
+          const response = await fetch(`/api/fred/${seriesId}?metricId=${metric.id}`);
           
-          if (cachedData && cachedData.length > 0) {
-            // If we have cached data, use it
-            return {
-              ...metric,
-              data: cachedData,
-              source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
-            };
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
           }
           
-          // If no cached data, fetch from the API
-          const apiData = await fetchFredData(seriesId);
+          const result = await response.json();
           
-          if (apiData && apiData.length > 0) {
+          if (result.data && result.data.length > 0) {
             return {
               ...metric,
-              data: apiData,
+              data: result.data,
               source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
             };
           }
@@ -324,36 +317,40 @@ export async function fetchMetricById(id: string): Promise<Metric | null> {
       };
     }
     
-    // First check if we have data in the database
-    const cachedData = await getCachedFredData(seriesId);
-    
-    if (cachedData && cachedData.length > 0) {
-      // If we have cached data, use it
+    try {
+      // Call the internal API route
+      const response = await fetch(`/api/fred/${seriesId}?metricId=${id}`);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.data && result.data.length > 0) {
+        return {
+          ...metricDefinition,
+          data: result.data,
+          source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
+        };
+      }
+      
+      // If we couldn't get data, use example data
+      console.log(`No data available for ${id}, using example data`);
       return {
         ...metricDefinition,
-        data: cachedData,
-        source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
+        data: generateExampleData(metricDefinition),
+        source: 'Example Data (FRED API data unavailable)'
       };
-    }
-    
-    // If no cached data, fetch from the API
-    const apiData = await fetchFredData(seriesId);
-    
-    if (apiData && apiData.length > 0) {
+    } catch (error) {
+      console.error(`Error fetching data for metric ${id}:`, error);
+      // Use example data on error
       return {
         ...metricDefinition,
-        data: apiData,
-        source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
+        data: generateExampleData(metricDefinition),
+        source: 'Example Data (Error fetching FRED data)'
       };
     }
-    
-    // If we couldn't get data, use example data
-    console.log(`No data available for ${id}, using example data`);
-    return {
-      ...metricDefinition,
-      data: generateExampleData(metricDefinition),
-      source: 'Example Data (FRED API data unavailable)'
-    };
   } catch (error) {
     console.error(`Error fetching metric ${id}:`, error);
     // Use example data on error
@@ -368,4 +365,4 @@ export async function fetchMetricById(id: string): Promise<Metric | null> {
       source: 'Example Data (Error fetching FRED data)'
     };
   }
-} 
+}

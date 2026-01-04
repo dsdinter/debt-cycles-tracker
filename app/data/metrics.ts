@@ -52,6 +52,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'debt-to-gdp',
     name: 'Debt-to-GDP Ratio',
+    title: 'Debt-to-GDP Ratio',
     description: 'The ratio of a country\'s total debt to its gross domestic product (GDP), indicating the country\'s ability to pay back its debt.',
     category: 'deflationary',
     unit: '%',
@@ -61,6 +62,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'short-term-interest',
     name: 'Short-Term Interest Rates',
+    title: 'Short-Term Interest Rates',
     description: 'Interest rates on short-term debt instruments, typically influenced by central bank policy.',
     category: 'deflationary',
     unit: '%',
@@ -70,6 +72,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'long-term-interest',
     name: 'Long-Term Interest Rates',
+    title: 'Long-Term Interest Rates',
     description: 'Interest rates on long-term debt instruments, such as 10-year government bonds.',
     category: 'deflationary',
     unit: '%',
@@ -79,6 +82,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'unemployment',
     name: 'Unemployment Rate',
+    title: 'Unemployment Rate',
     description: 'The percentage of the labor force that is unemployed but actively seeking employment.',
     category: 'deflationary',
     unit: '%',
@@ -88,6 +92,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'stock-market',
     name: 'Stock Market Indices',
+    title: 'Stock Market Indices',
     description: 'Measures of the value of a section of the stock market, typically represented by the S&P 500 for the U.S.',
     category: 'deflationary',
     unit: 'index',
@@ -97,6 +102,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'real-estate',
     name: 'Real Estate Prices',
+    title: 'Real Estate Prices',
     description: 'Average prices of residential properties, adjusted for inflation.',
     category: 'deflationary',
     unit: 'index',
@@ -106,6 +112,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'credit-growth',
     name: 'Credit Growth Rates',
+    title: 'Credit Growth Rates',
     description: 'Annual percentage change in total credit to the non-financial sector.',
     category: 'deflationary',
     unit: '%',
@@ -115,6 +122,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'inflation-def',
     name: 'Inflation Rates',
+    title: 'Inflation Rates',
     description: 'Annual percentage change in price levels, typically measured by the Consumer Price Index (CPI).',
     category: 'both',
     unit: '%',
@@ -124,6 +132,7 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'gdp-growth-def',
     name: 'GDP Growth Rates',
+    title: 'GDP Growth Rates',
     description: 'Annual percentage change in real Gross Domestic Product.',
     category: 'both',
     unit: '%',
@@ -133,11 +142,32 @@ export const deflationaryMetrics: Metric[] = [
   {
     id: 'debt-service-def',
     name: 'Debt Service Payments',
+    title: 'Debt Service Payments',
     description: 'Debt service payments as a percentage of GDP, representing the burden of debt on the economy.',
     category: 'both',
     unit: '%',
     source: 'Bank for International Settlements',
     data: generateHistoricalData(1900, 2023, 5, 35, 'cycle')
+  },
+  {
+    id: 'yield-curve',
+    name: 'Treasury Yield Curve',
+    title: 'Treasury Yield Curve',
+    description: 'The difference between 10-year and 2-year Treasury bond yields.',
+    category: 'financial',
+    unit: '%',
+    source: 'Federal Reserve Economic Data (FRED)',
+    data: generateHistoricalData(1900, 2023, -2, 3, 'cycle')
+  },
+  {
+    id: 'consumer-sentiment',
+    name: 'Consumer Sentiment',
+    title: 'Consumer Sentiment',
+    description: 'Index measuring consumer confidence regarding the economy and personal finances.',
+    category: 'consumer',
+    unit: 'Index',
+    source: 'University of Michigan',
+    data: generateHistoricalData(1900, 2023, 50, 110, 'cycle')
   }
 ];
 
@@ -146,6 +176,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'inflation-inf',
     name: 'Inflation Rates',
+    title: 'Inflation Rates',
     description: 'Annual percentage change in price levels, typically measured by the Consumer Price Index (CPI).',
     category: 'both',
     unit: '%',
@@ -155,6 +186,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'real-exchange',
     name: 'Real Exchange Rates',
+    title: 'Real Exchange Rates',
     description: 'Exchange rates adjusted for inflation differentials between countries.',
     category: 'inflationary',
     unit: 'index',
@@ -164,6 +196,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'nominal-exchange',
     name: 'Nominal Exchange Rates',
+    title: 'Nominal Exchange Rates',
     description: 'The current exchange rate between currencies, unadjusted for inflation.',
     category: 'inflationary',
     unit: 'index',
@@ -173,6 +206,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'foreign-debt',
     name: 'Foreign Debt Percentage',
+    title: 'Foreign Debt Percentage',
     description: 'Foreign debt as a percentage of GDP, indicating external financial obligations.',
     category: 'inflationary',
     unit: '%',
@@ -182,6 +216,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'current-account',
     name: 'Current Account Balance',
+    title: 'Current Account Balance',
     description: 'The balance of trade plus net income plus net current transfers as a percentage of GDP.',
     category: 'inflationary',
     unit: '%',
@@ -191,6 +226,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'capital-inflows',
     name: 'Capital Inflows',
+    title: 'Capital Inflows',
     description: 'Capital inflows as a percentage of GDP, representing foreign investment in domestic assets.',
     category: 'inflationary',
     unit: '%',
@@ -200,6 +236,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'capital-outflows',
     name: 'Capital Outflows',
+    title: 'Capital Outflows',
     description: 'Capital outflows as a percentage of GDP, representing domestic investment in foreign assets.',
     category: 'inflationary',
     unit: '%',
@@ -209,6 +246,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'fx-reserves',
     name: 'Foreign Exchange Reserves',
+    title: 'Foreign Exchange Reserves',
     description: 'Foreign exchange reserves as a percentage of GDP, representing the country\'s buffer against external shocks.',
     category: 'inflationary',
     unit: '%',
@@ -218,6 +256,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'equity-local',
     name: 'Equity Prices (Local Currency)',
+    title: 'Equity Prices (Local Currency)',
     description: 'Stock market performance measured in local currency.',
     category: 'inflationary',
     unit: 'index',
@@ -227,6 +266,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'equity-foreign',
     name: 'Equity Prices (Foreign Currency)',
+    title: 'Equity Prices (Foreign Currency)',
     description: 'Stock market performance measured in foreign currency (e.g., USD for non-US markets).',
     category: 'inflationary',
     unit: 'index',
@@ -236,6 +276,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'debt-service-inf',
     name: 'Debt Service Payments',
+    title: 'Debt Service Payments',
     description: 'Debt service payments as a percentage of GDP, representing the burden of debt on the economy.',
     category: 'both',
     unit: '%',
@@ -245,6 +286,7 @@ export const inflationaryMetrics: Metric[] = [
   {
     id: 'gdp-growth-inf',
     name: 'GDP Growth Rates',
+    title: 'GDP Growth Rates',
     description: 'Annual percentage change in real Gross Domestic Product.',
     category: 'both',
     unit: '%',
@@ -265,4 +307,4 @@ export const getMetricsByCategory = (category: 'deflationary' | 'inflationary' |
   return allMetrics.filter(metric => 
     metric.category === category || metric.category === 'both'
   );
-}; 
+};
