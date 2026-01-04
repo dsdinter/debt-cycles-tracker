@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Utility for handling CORS proxying when needed
  * This helps with browser CORS restrictions when calling the FRED API directly
@@ -30,4 +28,4 @@ export function applyCorsProxyIfNeeded(url: string): string {
     : corsProxyUrl;
   
   return `${proxyBase}/${url}`;
-} 
+}
