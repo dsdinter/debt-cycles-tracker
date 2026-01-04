@@ -125,9 +125,11 @@ export async function seedMetric(
 async function main() {
   console.log('Starting database seed...');
   
-  // Get all metrics
-  const allMetrics = [...deflationaryMetrics, ...inflationaryMetrics];
-  const uniqueMetricIds = [...new Set(allMetrics.map(m => m.id))];
+  // Get all mapped metrics from FRED API service
+  // This ensures we seed everything defined in the map, including raw series for calculations
+  const uniqueMetricIds = Object.keys(FRED_SERIES_MAP);
+  
+  console.log(`Found ${uniqueMetricIds.length} metrics to seed from FRED_SERIES_MAP`);
   
   // Seed each metric
   for (const metricId of uniqueMetricIds) {

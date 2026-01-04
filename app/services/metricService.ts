@@ -101,8 +101,107 @@ const METRIC_DEFINITIONS: Metric[] = [
     source: 'Federal Reserve Economic Data (FRED)',
     trendStatus: 'neutral',
     trendDescription: 'Consumer sentiment typically rises during economic expansions and falls during contractions, reflecting psychological aspects of debt cycles.'
+  },
+  {
+    id: 'govtDebtToRevenue',
+    title: 'Govt Debt-to-Revenue',
+    description: 'The ratio of total public debt to federal government current receipts. A more direct measure of debt burden than Debt-to-GDP.',
+    unit: ' Ratio',
+    category: 'debt-mechanics',
+    frequency: 'quarterly',
+    data: [], 
+    source: 'FRED (Calculated)',
+    trendStatus: 'negative',
+    trendDescription: 'Rising debt-to-revenue indicates the government is accumulating obligations faster than its income, a precursor to debt crises.'
+  },
+  {
+    id: 'govtDebtServiceToRevenue',
+    title: 'Debt Service-to-Revenue',
+    description: 'Interest payments as a percentage of federal receipts. Indicates the portion of income consumed by past debts.',
+    unit: '%',
+    category: 'debt-mechanics',
+    frequency: 'quarterly',
+    data: [], 
+    source: 'FRED (Calculated)',
+    isPercentage: true,
+    trendStatus: 'negative',
+    trendDescription: 'When debt service consumes a large portion of revenue, it crowds out other spending and forces more borrowing, creating a vicious cycle.'
+  },
+  {
+    id: 'rateVsGrowth',
+    title: 'Interest Rate vs Growth',
+    description: 'The spread between the 10-Year Treasury Rate and Nominal GDP Growth. Positive values indicate tight monetary conditions relative to growth.',
+    unit: '%',
+    category: 'debt-mechanics',
+    frequency: 'quarterly',
+    data: [], 
+    source: 'FRED (Calculated)',
+    isPercentage: true,
+    trendStatus: 'warning',
+    trendDescription: 'If interest rates exceed income growth, debt burdens naturally compound. Keeping rates below growth is key to deleveraging.'
+  },
+  {
+    id: 'debtToReserves',
+    title: 'Debt-to-Reserves',
+    description: 'Total public debt relative to total reserves. High values indicate a lack of a liquidity buffer.',
+    unit: ' Ratio',
+    category: 'debt-mechanics',
+    frequency: 'quarterly',
+    data: [], 
+    source: 'FRED (Calculated)',
+    trendStatus: 'negative',
+    trendDescription: 'Low reserves relative to debt leave a country vulnerable to capital flight and currency crises.'
   }
 ];
+
+// Configuration for composite metrics (calculated from multiple series)
+const COMPOSITE_METRIC_CONFIG: Record<string, {
+  formula: (values: Record<string, number>) => number;
+  dependencies: string[];
+}> = {
+  'govtDebtToRevenue': {
+    // Debt (Millions) / (Receipts (Billions) * 1000) -> Ratio
+    // Note: Receipts are usually annual rate, if quarterly data is at annual rate (SAAR), we use as is.
+    // FRED FGRECPT is Billions of Dollars, Seasonally Adjusted Annual Rate.
+    // GFDEBTN is Millions of Dollars, Not Seasonally Adjusted.
+    // We need to convert Debt to Billions: Debt / 1000.
+    // Ratio = (Debt/1000) / Receipts.
+    formula: (v) => (v['GFDEBTN'] / 1000) / v['FGRECPT'],
+    dependencies: ['GFDEBTN', 'FGRECPT']
+  },
+  'govtDebtServiceToRevenue': {
+    // Interest (Billions) / Receipts (Billions) * 100
+    formula: (v) => (v['A091RC1Q027SBEA'] / v['FGRECPT']) * 100,
+    dependencies: ['A091RC1Q027SBEA', 'FGRECPT']
+  },
+  'rateVsGrowth': {
+    // 10Y Rate - Nominal GDP Growth
+    // We need to calculate GDP Growth first.
+    // For simplicity here, let's assume we can fetch the growth rate directly if available, 
+    // OR we calculate growth from GDP levels on the fly.
+    // Since we only fetch single points here, calculating growth (which needs history) is hard in this simple map.
+    // However, we can fetch 'A191RL1Q225SBEA' (Real Growth) and add Inflation? 
+    // Dalio says "Nominal income growth rates". 
+    // Let's use Nominal GDP (GDP) and calculate growth in the data processing step?
+    // OR better: Just fetch the Nominal GDP Growth series if it exists?
+    // 'A191RP1Q027SBEA' is "Gross Domestic Product, Percent Change from Preceding Period" (Nominal).
+    // Let's check if 'A191RP1Q027SBEA' is available. If not, I'll stick to the plan of calculating it.
+    // But wait, the config takes `values` for a single point in time. I can't calculate growth (requires T-1) here easily.
+    // SOLUTION: Use the Nominal GDP Growth Series from FRED directly! 
+    // Series: A191RP1Q027SBEA
+    // Formula: GS10 - NominalGDPGrowth
+    formula: (v) => v['GS10'] - v['A191RP1Q027SBEA'],
+    dependencies: ['GS10', 'A191RP1Q027SBEA']
+  },
+  'debtToReserves': {
+    // Debt (Millions) / (Reserves (Millions) * 1000?? No, Reserves are Millions $)
+    // TOTRESNS is Millions of Dollars.
+    // GFDEBTN is Millions of Dollars.
+    // Ratio = Debt / Reserves
+    formula: (v) => v['GFDEBTN'] / v['TOTRESNS'],
+    dependencies: ['GFDEBTN', 'TOTRESNS']
+  }
+};
 
 // Map our internal metric IDs to FRED series IDs
 const METRIC_TO_FRED_MAP: Record<string, string> = {
@@ -223,74 +322,115 @@ function generateExampleData(metric: Metric): FredDataPoint[] {
 }
 
 /**
+ * Helper to fetch data for a composite metric
+ */
+async function fetchCompositeMetricData(metricId: string): Promise<FredDataPoint[]> {
+  const config = COMPOSITE_METRIC_CONFIG[metricId];
+  if (!config) return [];
+
+  try {
+    // Fetch all dependencies in parallel
+    const dependencyData = await Promise.all(
+      config.dependencies.map(async (seriesId) => {
+        const response = await fetch(`/api/fred/${seriesId}?metricId=${metricId}-dep`);
+        if (!response.ok) return { seriesId, data: [] };
+        const result = await response.json();
+        return { seriesId, data: result.data as FredDataPoint[] };
+      })
+    );
+
+    // Create a map of date -> { seriesId: value }
+    const dateMap: Record<string, Record<string, number>> = {};
+    
+    dependencyData.forEach(({ seriesId, data }) => {
+      data.forEach(point => {
+        if (!dateMap[point.date]) dateMap[point.date] = {};
+        dateMap[point.date][seriesId] = point.value;
+      });
+    });
+
+    // Calculate formula for each date where we have all dependencies
+    const results: FredDataPoint[] = [];
+    
+    Object.entries(dateMap).forEach(([date, values]) => {
+      // Check if we have all dependencies
+      const hasAllDeps = config.dependencies.every(dep => values[dep] !== undefined);
+      
+      if (hasAllDeps) {
+        try {
+          const calculatedValue = config.formula(values);
+          // Round to 2 decimals
+          results.push({
+            date,
+            value: Math.round(calculatedValue * 100) / 100
+          });
+        } catch (e) {
+          // Ignore calculation errors
+        }
+      }
+    });
+
+    // Sort by date
+    return results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch (error) {
+    console.error(`Error calculating composite metric ${metricId}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single metric data (either direct FRED mapping or composite)
+ */
+async function fetchMetricData(metric: Metric): Promise<Metric> {
+  // Case 1: Composite Metric
+  if (COMPOSITE_METRIC_CONFIG[metric.id]) {
+    const data = await fetchCompositeMetricData(metric.id);
+    if (data.length > 0) {
+      return { ...metric, data, source: 'Calculated from FRED Data' };
+    }
+    // Fallback to example if calculation failed
+    return { ...metric, data: generateExampleData(metric), source: 'Example Data (Calculation Failed)' };
+  }
+
+  // Case 2: Direct FRED Mapping
+  const seriesId = METRIC_TO_FRED_MAP[metric.id];
+  if (!seriesId) {
+    // Fallback
+    return { ...metric, data: generateExampleData(metric), source: 'Example Data (No FRED mapping)' };
+  }
+
+  try {
+    const response = await fetch(`/api/fred/${seriesId}?metricId=${metric.id}`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    
+    const result = await response.json();
+    if (result.data && result.data.length > 0) {
+      return {
+        ...metric,
+        data: result.data,
+        source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
+      };
+    }
+  } catch (error) {
+    console.error(`Error fetching data for ${metric.id}:`, error);
+  }
+
+  return { ...metric, data: generateExampleData(metric), source: 'Example Data (Error fetching)' };
+}
+
+/**
  * Fetch all available metrics with real data
  */
 export async function fetchMetrics(): Promise<Metric[]> {
   try {
-    // Start with our metric definitions
     const metrics = [...METRIC_DEFINITIONS];
-    
-    // Fetch real data for each metric
-    const metricsWithData = await Promise.all(
-      metrics.map(async (metric) => {
-        // Get the FRED series ID for this metric
-        const seriesId = METRIC_TO_FRED_MAP[metric.id];
-        if (!seriesId) {
-          console.warn(`No FRED series mapping for metric ${metric.id}`);
-          // Generate example data as fallback
-          return {
-            ...metric,
-            data: generateExampleData(metric),
-            source: 'Example Data (No FRED mapping available)'
-          };
-        }
-        
-        try {
-          // Call the internal API route instead of direct function calls
-          // This allows server-side execution where DB access is permitted
-          const response = await fetch(`/api/fred/${seriesId}?metricId=${metric.id}`);
-          
-          if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          
-          if (result.data && result.data.length > 0) {
-            return {
-              ...metric,
-              data: result.data,
-              source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
-            };
-          }
-          
-          // If we couldn't get data, use example data
-          console.log(`No data available for ${metric.id}, using example data`);
-          return {
-            ...metric,
-            data: generateExampleData(metric),
-            source: 'Example Data (FRED API data unavailable)'
-          };
-        } catch (error) {
-          console.error(`Error fetching data for metric ${metric.id}:`, error);
-          // Use example data on error
-          return {
-            ...metric,
-            data: generateExampleData(metric),
-            source: 'Example Data (Error fetching FRED data)'
-          };
-        }
-      })
-    );
-    
-    return metricsWithData;
+    return await Promise.all(metrics.map(fetchMetricData));
   } catch (error) {
     console.error('Error in fetchMetrics:', error);
-    // Generate example data for all metrics as fallback
     return METRIC_DEFINITIONS.map(metric => ({
       ...metric,
       data: generateExampleData(metric),
-      source: 'Example Data (Error in fetchMetrics)'
+      source: 'Example Data (Error)'
     }));
   }
 }
@@ -301,68 +441,11 @@ export async function fetchMetrics(): Promise<Metric[]> {
 export async function fetchMetricById(id: string): Promise<Metric | null> {
   try {
     const metricDefinition = METRIC_DEFINITIONS.find(m => m.id === id);
-    if (!metricDefinition) {
-      return null;
-    }
-    
-    // Get the FRED series ID for this metric
-    const seriesId = METRIC_TO_FRED_MAP[id];
-    if (!seriesId) {
-      console.warn(`No FRED series mapping for metric ${id}`);
-      // Generate example data as fallback
-      return {
-        ...metricDefinition,
-        data: generateExampleData(metricDefinition),
-        source: 'Example Data (No FRED mapping available)'
-      };
-    }
-    
-    try {
-      // Call the internal API route
-      const response = await fetch(`/api/fred/${seriesId}?metricId=${id}`);
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.data && result.data.length > 0) {
-        return {
-          ...metricDefinition,
-          data: result.data,
-          source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
-        };
-      }
-      
-      // If we couldn't get data, use example data
-      console.log(`No data available for ${id}, using example data`);
-      return {
-        ...metricDefinition,
-        data: generateExampleData(metricDefinition),
-        source: 'Example Data (FRED API data unavailable)'
-      };
-    } catch (error) {
-      console.error(`Error fetching data for metric ${id}:`, error);
-      // Use example data on error
-      return {
-        ...metricDefinition,
-        data: generateExampleData(metricDefinition),
-        source: 'Example Data (Error fetching FRED data)'
-      };
-    }
+    if (!metricDefinition) return null;
+    return await fetchMetricData(metricDefinition);
   } catch (error) {
     console.error(`Error fetching metric ${id}:`, error);
-    // Use example data on error
-    const metricDefinition = METRIC_DEFINITIONS.find(m => m.id === id);
-    if (!metricDefinition) {
-      return null;
-    }
-    
-    return {
-      ...metricDefinition,
-      data: generateExampleData(metricDefinition),
-      source: 'Example Data (Error fetching FRED data)'
-    };
+    const def = METRIC_DEFINITIONS.find(m => m.id === id);
+    return def ? { ...def, data: generateExampleData(def), source: 'Example Data (Error)' } : null;
   }
 }

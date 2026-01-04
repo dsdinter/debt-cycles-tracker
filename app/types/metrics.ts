@@ -18,7 +18,7 @@ export type MetricTimeframe = 'all' | '1y' | '5y' | '10y' | '20y';
 /**
  * Metric categories for grouping
  */
-export type MetricCategory = 'economic' | 'financial' | 'monetary' | 'debt' | 'consumer';
+export type MetricCategory = 'economic' | 'financial' | 'monetary' | 'debt' | 'consumer' | 'debt-mechanics' | 'deflationary' | 'inflationary' | 'both';
 
 /**
  * Status of a metric's trend relative to debt cycle
@@ -34,10 +34,10 @@ export interface Metric {
   description: string;
   unit: string;
   category: MetricCategory;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+  frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
   data: FredDataPoint[];
   source: string;
   trendStatus?: TrendStatus;
   trendDescription?: string;
   isPercentage?: boolean;
-} 
+}

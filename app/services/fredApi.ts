@@ -41,6 +41,12 @@ export const FRED_SERIES_MAP: Record<string, string> = {
   'gdp-growth-inf': 'A191RL1Q225SBEA', // Same as gdp-growth-def
   'yield-curve': 'T10Y2Y', // Treasury Yield Curve
   'consumer-sentiment': 'UMCSENT', // Consumer Sentiment
+  
+  // Raw series for Dalio Mechanics
+  'federal-debt-raw': 'GFDEBTN', // Federal Debt: Total Public Debt
+  'federal-receipts-raw': 'FGRECPT', // Federal Government Current Receipts
+  'interest-payments-raw': 'A091RC1Q027SBEA', // Federal Interest Payments
+  'nominal-gdp-raw': 'GDP', // Gross Domestic Product (Nominal)
 };
 
 // Also map series IDs to friendly titles and frequencies
@@ -157,6 +163,30 @@ export const FRED_SERIES_INFO: Record<string, {
     description: 'University of Michigan: Consumer Sentiment',
     unit: 'Index',
     frequency: 'Monthly'
+  },
+  'GFDEBTN': {
+    name: 'Total Public Debt',
+    description: 'Federal Debt: Total Public Debt',
+    unit: 'Millions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'FGRECPT': {
+    name: 'Federal Receipts',
+    description: 'Federal Government Current Receipts',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'A091RC1Q027SBEA': {
+    name: 'Federal Interest Payments',
+    description: 'Federal government current expenditures: Interest payments',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
+  },
+  'GDP': {
+    name: 'Nominal GDP',
+    description: 'Gross Domestic Product',
+    unit: 'Billions of Dollars',
+    frequency: 'Quarterly'
   }
 };
 

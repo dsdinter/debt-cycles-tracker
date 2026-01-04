@@ -8,9 +8,10 @@ import { fetchFredData as fetchFredDataDirect } from '@/app/services/fredApi';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { seriesId: string } }
+  props: { params: Promise<{ seriesId: string }> }
 ) {
   try {
+    const params = await props.params;
     const seriesId = params.seriesId;
     const { searchParams } = new URL(request.url);
     const fromDate = searchParams.get('fromDate') || undefined;
@@ -72,4 +73,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

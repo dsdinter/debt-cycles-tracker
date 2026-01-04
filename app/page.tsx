@@ -48,6 +48,7 @@ export default function Home() {
   const monetaryMetrics = allMetrics.filter(m => m.category === 'monetary');
   const debtMetrics = allMetrics.filter(m => m.category === 'debt');
   const consumerMetrics = allMetrics.filter(m => m.category === 'consumer');
+  const debtMechanicsMetrics = allMetrics.filter(m => m.category === 'debt-mechanics');
   
   // Handle metric click to show details
   const handleMetricClick = (metric: Metric) => {
@@ -134,7 +135,8 @@ export default function Home() {
               { id: 'financial', label: 'Financial Indicators' },
               { id: 'monetary', label: 'Monetary Indicators' },
               { id: 'debt', label: 'Debt Indicators' },
-              { id: 'consumer', label: 'Consumer Indicators' }
+              { id: 'consumer', label: 'Consumer Indicators' },
+              { id: 'mechanics', label: 'Dalio Mechanics' }
             ]}
           >
             <TabPanel id="all">
@@ -159,6 +161,10 @@ export default function Home() {
             
             <TabPanel id="consumer">
               {renderMetricsGrid(consumerMetrics)}
+            </TabPanel>
+
+            <TabPanel id="mechanics">
+              {renderMetricsGrid(debtMechanicsMetrics)}
             </TabPanel>
           </Tabs>
         </section>
