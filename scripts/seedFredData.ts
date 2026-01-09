@@ -12,12 +12,14 @@ const prisma = new PrismaClient();
  * @param prismaClient PrismaClient instance to use for database operations
  * @param metricId The metric ID to seed
  * @param metricTitle Optional title for the metric (used for logging)
+ * @param force If true, update data even if it already exists
  * @returns Promise that resolves when seeding is complete
  */
 export async function seedMetric(
   prismaClient: PrismaClient, 
   metricId: string, 
-  metricTitle?: string
+  metricTitle?: string,
+  force: boolean = false
 ) {
   console.log(`Seeding metric ${metricId}${metricTitle ? ` (${metricTitle})` : ''}...`);
   
@@ -42,12 +44,14 @@ export async function seedMetric(
         where: { seriesId }
       });
       
-      if (dataCount > 0) {
-        console.log(`Series ${seriesId} already has ${dataCount} data points. Skipping.`);
+      if (dataCount > 0 && !force) {
+        console.log(`Series ${seriesId} already has ${dataCount} data points. Skipping (use --force to update).`);
         return { seriesId, dataCount };
+      } else if (dataCount > 0 && force) {
+        console.log(`Series ${seriesId} has ${dataCount} data points, but --force flag is set. Updating...`);
+      } else {
+        console.log(`Series ${seriesId} exists but has no data points. Fetching data...`);
       }
-      
-      console.log(`Series ${seriesId} exists but has no data points. Fetching data...`);
     }
     
     // Fetch data from FRED API
@@ -123,7 +127,10 @@ export async function seedMetric(
 }
 
 async function main() {
-  console.log('Starting database seed...');
+  const args = process.argv.slice(2);
+  const force = args.includes('--force');
+  
+  console.log(`Starting database seed...${force ? ' (FORCE MODE)' : ''}`);
   
   // Get all mapped metrics from FRED API service
   // This ensures we seed everything defined in the map, including raw series for calculations
@@ -133,7 +140,7 @@ async function main() {
   
   // Seed each metric
   for (const metricId of uniqueMetricIds) {
-    await seedMetric(prisma, metricId);
+    await seedMetric(prisma, metricId, undefined, force);
   }
   
   console.log('Seed completed!');
