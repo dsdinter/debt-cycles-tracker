@@ -123,13 +123,14 @@ export async function cacheFredData(
       });
       
       // Insert new data points
-      for (const point of data) {
-        await tx.cachedFredData.create({
-          data: {
+      if (data.length > 0) {
+        await tx.cachedFredData.createMany({
+          data: data.map(point => ({
             seriesId,
             date: new Date(point.date),
             value: point.value
-          }
+          })),
+          skipDuplicates: true
         });
       }
       
