@@ -202,7 +202,8 @@ export async function fetchFredData(
   fromDate?: string,
   toDate?: string,
   frequency = "m",
-  cacheTTL: number = DEFAULT_CACHE_TTL
+  cacheTTL: number = DEFAULT_CACHE_TTL,
+  forceRefresh: boolean = false
 ): Promise<DataPoint[]> {
   try {
     const metricInfo = FRED_SERIES_INFO[seriesId] || {
@@ -212,18 +213,23 @@ export async function fetchFredData(
       frequency: frequency
     };
     
-    // First check if we have cached data in our database
-    const cachedData = await getCachedFredData(seriesId);
-    if (cachedData !== null) {
-      // We have cached data
-      console.log(`Using cached data for ${seriesId} (${cachedData.length} points)`);
-      return cachedData;
+    // First check if we have cached data in our database (unless forceRefresh is true)
+    if (!forceRefresh) {
+      const cachedData = await getCachedFredData(seriesId);
+      if (cachedData !== null) {
+        // We have cached data
+        console.log(`Using cached data for ${seriesId} (${cachedData.length} points)`);
+        return cachedData;
+      }
     }
     
     // Check if we should fetch from API - this allows tests to mock this function
-    const shouldFetch = await shouldFetchFromApi(seriesId);
-    if (!shouldFetch) {
-      return [];
+    // If forceRefresh is true, we skip the check and always fetch
+    if (!forceRefresh) {
+      const shouldFetch = await shouldFetchFromApi(seriesId);
+      if (!shouldFetch) {
+        return [];
+      }
     }
     
     // Check if API key is available
@@ -418,7 +424,9 @@ export function calculateAnnualPercentageChange(data: DataPoint[]): DataPoint[] 
  */
 export function processFredData(data: DataPoint[], metricId: string): DataPoint[] {
   switch (metricId) {
+    case 'inflation':
     case 'inflation-def':
+    case 'inflation-inf':
     case 'gdp-growth-def':
       // These metrics need to be represented as percentage changes
       return calculateAnnualPercentageChange(data);

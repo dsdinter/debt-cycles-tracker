@@ -1,16 +1,18 @@
 import { Metric, FredDataPoint } from '../types/metrics';
+import { processFredData } from './fredApiClient';
 
 // Sample metrics definitions - we'll keep these for structure, but populate data dynamically
 const METRIC_DEFINITIONS: Metric[] = [
   {
     id: 'gdp',
-    title: 'Real GDP',
-    description: 'Gross Domestic Product adjusted for inflation, measuring the total value of goods and services produced.',
-    unit: ' Trillion $',
+    title: 'Real GDP Growth',
+    description: 'Real Gross Domestic Product: Percent Change from Preceding Period, Seasonally Adjusted Annual Rate.',
+    unit: '%',
     category: 'economic',
     frequency: 'quarterly',
     data: [], // Will be populated from FRED API
     source: 'Federal Reserve Economic Data (FRED)',
+    isPercentage: true,
     trendStatus: 'positive',
     trendDescription: 'GDP growth is fundamental to understanding the debt cycle. During the expansion phase, GDP grows steadily, while during contractions, growth slows or becomes negative.'
   },
@@ -31,11 +33,12 @@ const METRIC_DEFINITIONS: Metric[] = [
     id: 'inflation',
     title: 'Consumer Price Index',
     description: 'Measures changes in the price level of a weighted average market basket of consumer goods and services.',
-    unit: '',
+    unit: '%',
     category: 'monetary',
     frequency: 'monthly',
     data: [], // Will be populated from FRED API
     source: 'Federal Reserve Economic Data (FRED)',
+    isPercentage: true,
     trendStatus: 'warning',
     trendDescription: 'Inflation is a key indicator in debt cycles. High inflation can signal the inflationary phase, while deflation often accompanies deflationary debt crises.'
   },
@@ -381,7 +384,7 @@ async function fetchCompositeMetricData(metricId: string): Promise<FredDataPoint
 /**
  * Fetch a single metric data (either direct FRED mapping or composite)
  */
-async function fetchMetricData(metric: Metric): Promise<Metric> {
+async function fetchMetricData(metric: Metric, options?: { forceRefresh?: boolean }): Promise<Metric> {
   // Case 1: Composite Metric
   if (COMPOSITE_METRIC_CONFIG[metric.id]) {
     const data = await fetchCompositeMetricData(metric.id);
@@ -400,14 +403,18 @@ async function fetchMetricData(metric: Metric): Promise<Metric> {
   }
 
   try {
-    const response = await fetch(`/api/fred/${seriesId}?metricId=${metric.id}`);
+    const url = `/api/fred/${seriesId}?metricId=${metric.id}${options?.forceRefresh ? '&forceRefresh=true' : ''}`;
+    const response = await fetch(url);
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     
     const result = await response.json();
     if (result.data && result.data.length > 0) {
+      // Process data (e.g. calculate inflation rate)
+      const processedData = processFredData(result.data, metric.id);
+      
       return {
         ...metric,
-        data: result.data,
+        data: processedData,
         source: `Federal Reserve Economic Data (FRED) - ${seriesId}`
       };
     }
@@ -421,10 +428,10 @@ async function fetchMetricData(metric: Metric): Promise<Metric> {
 /**
  * Fetch all available metrics with real data
  */
-export async function fetchMetrics(): Promise<Metric[]> {
+export async function fetchMetrics(options?: { forceRefresh?: boolean }): Promise<Metric[]> {
   try {
     const metrics = [...METRIC_DEFINITIONS];
-    return await Promise.all(metrics.map(fetchMetricData));
+    return await Promise.all(metrics.map(m => fetchMetricData(m, options)));
   } catch (error) {
     console.error('Error in fetchMetrics:', error);
     return METRIC_DEFINITIONS.map(metric => ({

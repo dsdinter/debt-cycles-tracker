@@ -6,7 +6,7 @@ import DynamicLineChart from '../charts/DynamicLineChart';
 import { Metric, MetricTimeframe } from '@/app/types/metrics';
 import { useMetricData } from '@/app/hooks/useMetricData';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
-import { FRED_SERIES_MAP } from '@/app/services/fredApiClient';
+import { FRED_SERIES_MAP, METRIC_ID_TO_SERIES_ID } from '@/app/services/fredApiClient';
 
 export interface MetricDetailModalProps {
   metric: Metric | null;
@@ -30,14 +30,15 @@ export default function MetricDetailModal({ metric, isOpen, onClose }: MetricDet
   }, [metric.id]);
   
   // Get the FRED series ID for this metric
-  const seriesId = FRED_SERIES_MAP[metric.id];
+  // Try the new mapping (Metric -> Series) first, as FRED_SERIES_MAP might be reversed
+  const seriesId = METRIC_ID_TO_SERIES_ID?.[metric.id] || FRED_SERIES_MAP[metric.id];
   
   // Fetch real-time data for the selected metric
   const { 
     data,
     isLoading, 
     error 
-  } = useMetricData(seriesId, timeframe);
+  } = useMetricData(seriesId, timeframe, metric.id);
   
   // Filter data based on the selected timeframe
   const filterDataByTimeframe = (data: any[], timeframe: MetricTimeframe) => {

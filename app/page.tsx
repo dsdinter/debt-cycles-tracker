@@ -11,6 +11,7 @@ import { Metric, MetricTimeframe } from './types/metrics';
 import { fetchMetrics } from './services/metricService';
 import MetricsLoading from './components/ui/MetricsLoading';
 import MetricsError from './components/ui/MetricsError';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const [selectedMetric, setSelectedMetric] = useState<Metric | null>(null);
@@ -21,26 +22,38 @@ export default function Home() {
   const [allMetrics, setAllMetrics] = useState<Metric[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Helper function to load metrics
+  const loadMetrics = async (forceRefresh = false) => {
+    if (forceRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    setError(null);
+    
+    try {
+      const metrics = await fetchMetrics({ forceRefresh });
+      setAllMetrics(metrics);
+    } catch (err) {
+      console.error('Error loading metrics:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   // Fetch metrics on component mount
   useEffect(() => {
-    const loadMetrics = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const metrics = await fetchMetrics();
-        setAllMetrics(metrics);
-      } catch (err) {
-        console.error('Error loading metrics:', err);
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadMetrics();
   }, []);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    loadMetrics(true);
+  };
   
   // Filter metrics by category
   const economicMetrics = allMetrics.filter(m => m.category === 'economic');
@@ -96,10 +109,21 @@ export default function Home() {
             Tracking key economic metrics from Ray Dalio's Principles for Navigating Big Debt Crises
           </p>
           
-          {/* Global timeframe controls */}
-          <div className="flex items-center justify-end mb-4">
-            <div className="text-sm mr-2">Timeframe:</div>
-            <div className="flex space-x-2 text-xs">
+          {/* Global timeframe controls and Refresh */}
+          <div className="flex items-center justify-end mb-4 gap-4">
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading || isRefreshing}
+              className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Force refresh data from FRED"
+            >
+              <ArrowPathIcon className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+            </button>
+
+            <div className="flex items-center">
+              <div className="text-sm mr-2">Timeframe:</div>
+              <div className="flex space-x-2 text-xs">
               <button 
                 className={`px-2 py-1 rounded ${globalTimeframe === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                 onClick={() => setGlobalTimeframe('all')}
@@ -124,6 +148,7 @@ export default function Home() {
               >
                 1Y
               </button>
+              </div>
             </div>
           </div>
           

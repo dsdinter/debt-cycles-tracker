@@ -6,6 +6,7 @@ import { deflationaryMetrics, inflationaryMetrics } from '../data/metrics';
 import { 
   fetchFredData, 
   calculateAnnualPercentageChange,
+  processFredData,
   FRED_SERIES_MAP 
 } from '../services/fredApiClient';
 import { FredDataPoint, MetricTimeframe } from '../types/metrics';
@@ -59,7 +60,7 @@ export interface UseMetricDataResult {
 /**
  * Hook to fetch and manage FRED data for a specific metric series
  */
-export function useMetricData(seriesId: string, timeframe: MetricTimeframe = 'all'): UseMetricDataResult {
+export function useMetricData(seriesId: string, timeframe: MetricTimeframe = 'all', metricId?: string): UseMetricDataResult {
   const [data, setData] = useState<FredDataPoint[]>([]);
   const [percentChange, setPercentChange] = useState<FredDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,12 +80,15 @@ export function useMetricData(seriesId: string, timeframe: MetricTimeframe = 'al
       setError(null);
       
       try {
-        const result = await fetchFredData(seriesId);
+        const result = await fetchFredData(seriesId, undefined, undefined, undefined, undefined, metricId);
+        
+        // Process data based on metricId (e.g. calculate inflation rate)
+        const processedResult = metricId ? processFredData(result, metricId) : result;
         
         // Filter based on timeframe
-        let filteredData = filterDataByTimeframe(result, timeframe);
+        let filteredData = filterDataByTimeframe(processedResult, timeframe);
         
-        // Calculate percentage change
+        // Calculate percentage change (for secondary display if needed)
         const changeData = calculateAnnualPercentageChange(result);
         let filteredChangeData = filterDataByTimeframe(changeData, timeframe);
         

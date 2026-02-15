@@ -19,15 +19,19 @@ export async function GET(
     const frequency = searchParams.get('frequency') || 'm';
     const cacheTTL = searchParams.get('cacheTTL') ? parseInt(searchParams.get('cacheTTL')!) : undefined;
     const metricId = searchParams.get('metricId') || seriesId;
+    const forceRefresh = searchParams.get('forceRefresh') === 'true';
     
-    // Check if we should use cached data
-    const shouldFetch = await shouldFetchFromApi(seriesId);
-    
-    // If we have fresh data in the cache, return it
-    if (!shouldFetch) {
-      const cachedData = await getCachedFredData(seriesId);
-      if (cachedData && cachedData.length > 0) {
-        return NextResponse.json({ data: cachedData, source: 'cache' });
+    // Check if we should use cached data (unless forceRefresh is true)
+    let shouldFetch = true;
+    if (!forceRefresh) {
+      shouldFetch = await shouldFetchFromApi(seriesId);
+      
+      // If we have fresh data in the cache, return it
+      if (!shouldFetch) {
+        const cachedData = await getCachedFredData(seriesId);
+        if (cachedData && cachedData.length > 0) {
+          return NextResponse.json({ data: cachedData, source: 'cache' });
+        }
       }
     }
     
@@ -47,7 +51,8 @@ export async function GET(
       fromDate,
       toDate,
       frequency as string,
-      cacheTTL
+      cacheTTL,
+      forceRefresh
     );
     
     // Cache the data if we got results

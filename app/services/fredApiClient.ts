@@ -23,6 +23,23 @@ export const FRED_SERIES_MAP: Record<string, string> = {
   'M2SL': 'money-supply-inf'
 };
 
+// Metric ID to FRED Series ID mapping (for data fetching)
+export const METRIC_ID_TO_SERIES_ID: Record<string, string> = {
+  'inflation': 'CPIAUCSL',
+  'inflation-def': 'CPIAUCSL',
+  'inflation-inf': 'CPIAUCSL',
+  'gdp': 'A191RL1Q225SBEA',
+  'gdp-growth-def': 'A191RL1Q225SBEA', 
+  'unemployment': 'UNRATE',
+  'unemployment-rate-def': 'UNRATE',
+  'federalFunds': 'DFF',
+  'debtToGDP': 'GFDEGDQ188S',
+  'yieldCurve': 'T10Y2Y',
+  'housingIndex': 'CSUSHPINSA',
+  'consumerSentiment': 'UMCSENT',
+  // Add other mappings as needed matching metricService.ts
+};
+
 // Information about FRED series
 export const FRED_SERIES_INFO: Record<string, {
   name: string;
@@ -82,7 +99,8 @@ export async function fetchFredData(
   fromDate?: string,
   toDate?: string,
   frequency = "m",
-  cacheTTL: number = DEFAULT_CACHE_TTL
+  cacheTTL: number = DEFAULT_CACHE_TTL,
+  metricId?: string
 ): Promise<DataPoint[]> {
   try {
     const apiKey = process.env.NEXT_PUBLIC_FRED_API_KEY;
@@ -93,6 +111,7 @@ export async function fetchFredData(
     if (toDate) params.append('toDate', toDate);
     if (frequency) params.append('frequency', frequency);
     if (cacheTTL) params.append('cacheTTL', cacheTTL.toString());
+    if (metricId) params.append('metricId', metricId);
     
     // Use our API route to fetch data
     const response = await fetch(`/api/fred/${seriesId}?${params.toString()}`);
@@ -227,7 +246,9 @@ export function calculateAnnualPercentageChange(data: DataPoint[]): DataPoint[] 
  */
 export function processFredData(data: DataPoint[], metricId: string): DataPoint[] {
   switch (metricId) {
+    case 'inflation':
     case 'inflation-def':
+    case 'inflation-inf':
     case 'gdp-growth-def':
       // These metrics need to be represented as percentage changes
       return calculateAnnualPercentageChange(data);
